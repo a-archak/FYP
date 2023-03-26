@@ -81,7 +81,7 @@ app.post('/registerUser', async (req, res) => {
       \n userType: ${userType} 
       \n interest: ${interest} 
       \n experience: ${experience} 
-      \n contactNumber: ${contactNumber}
+      \n contactNumber: ${contactNumber} \n
     `);
 
     // Define Oracle database connection details
@@ -93,6 +93,27 @@ app.post('/registerUser', async (req, res) => {
 
     // Connect to the database
     const conn = await oracledb.getConnection(dbConfig);
+
+    // Check if the userID already exists
+    query = `SELECT * FROM userstable WHERE userID = :userId`;
+    result = await conn.execute(query, { userId });
+    if (result.rows.length > 0) {
+      throw new Error('User with this userID already exists');
+    }
+
+    // Check if the email already exists
+    query = `SELECT * FROM userstable WHERE userEmail = :email`;
+    result = await conn.execute(query, { email });
+    if (result.rows.length > 0) {
+      throw new Error('User with this email already exists');
+    }
+
+    // Check if the contactNumber already exists
+    query = `SELECT * FROM userstable WHERE userContact = :contactNumber`;
+    result = await conn.execute(query, { contactNumber });
+    if (result.rows.length > 0) {
+      throw new Error('User with this contact number already exists');
+    }
 
     // Determine the table to insert the user data based on userType
     // let table;
@@ -107,12 +128,6 @@ app.post('/registerUser', async (req, res) => {
       throw new Error('Invalid userType');
     }
 
-    // Prepare a SQL statement to insert the user registration data
-    const sql = `
-        INSERT INTO UsersTable (userID, userName, userEmail, userPassword, userBio, userRole, userInterest, userExperience, userContact)
-        VALUES (:userId, :username, :email, :password, :role, :interest, :experience, :contactNumber);
-      `;
-
     const bindParams = {
       userId,
       username,
@@ -124,11 +139,17 @@ app.post('/registerUser', async (req, res) => {
       contactNumber
     };
 
-    //displaying user input
-    console.log(`user ID: ${bindParams.userId}`);
+    console.log(bindParams.userId.toString());
+
+    // Prepare a SQL statement to insert the user registration data
+    const query = `
+    INSERT INTO userstable (userID, userName, userEmail, userPassword, userRole, userInterest, userExperience, userContact)
+        VALUES (:userId, :username, :email, :password, :role, :interest, :experience, :contactNumber)
+        `
+      ;
 
     //executing command
-    const result = await conn.execute(sql, bindParams);
+    const result = await conn.execute(query, bindParams);
 
     // Commit the transaction
     await conn.commit();
