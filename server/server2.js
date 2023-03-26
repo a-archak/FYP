@@ -94,29 +94,7 @@ app.post('/registerUser', async (req, res) => {
     // Connect to the database
     const conn = await oracledb.getConnection(dbConfig);
 
-    // Check if the userID already exists
-    query = `SELECT * FROM userstable WHERE userID = :userId`;
-    result = await conn.execute(query, { userId });
-    if (result.rows.length > 0) {
-      throw new Error('User with this userID already exists');
-    }
-
-    // Check if the email already exists
-    query = `SELECT * FROM userstable WHERE userEmail = :email`;
-    result = await conn.execute(query, { email });
-    if (result.rows.length > 0) {
-      throw new Error('User with this email already exists');
-    }
-
-    // Check if the contactNumber already exists
-    query = `SELECT * FROM userstable WHERE userContact = :contactNumber`;
-    result = await conn.execute(query, { contactNumber });
-    if (result.rows.length > 0) {
-      throw new Error('User with this contact number already exists');
-    }
-
     // Determine the table to insert the user data based on userType
-    // let table;
     let role;
     if (userType === 'mentor') {
       // table = 'mentors';
@@ -141,25 +119,51 @@ app.post('/registerUser', async (req, res) => {
 
     console.log(bindParams.userId.toString());
 
-    // Prepare a SQL statement to insert the user registration data
-    const query = `
+    // Check if the userID already exists
+    const uquery = `SELECT * FROM userstable WHERE username = :username`;
+    const uresult = await conn.execute(uquery, { username });
+    if (uresult.rows.length > 0) {
+      console.log('UserID already exists');
+      return res.status(400).json({ error: 'User ID already exists' });
+    }
+
+    // Check if the email already exists
+    const equery = `SELECT * FROM userstable WHERE userEmail = :email`;
+    const eresult = await conn.execute(equery, { email });
+    if (eresult.rows.length > 0) {
+      console.log('email already exists');
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
+    // Check if the contactNumber already exists
+    const cquery = `SELECT * FROM userstable WHERE userContact = :contactNumber`;
+    const cresult = await conn.execute(cquery, { contactNumber });
+    if (cresult.rows.length > 0) {
+      console.log('contactNum already exists');
+      return res.status(400).json({ error: 'Contact number already exists' });
+    }
+
+    //query if no duplicate data
+    if (uresult.rows.length === 0 && eresult.rows.length === 0 && cresult.rows.length === 0) {
+      // Prepare a SQL statement to insert the user registration data
+      const query = `
     INSERT INTO userstable (userID, userName, userEmail, userPassword, userRole, userInterest, userExperience, userContact)
         VALUES (:userId, :username, :email, :password, :role, :interest, :experience, :contactNumber)
-        `
-      ;
+        `;
 
-    //executing command
-    const result = await conn.execute(query, bindParams);
+      //executing command
+      const result = await conn.execute(query, bindParams);
 
-    // Commit the transaction
-    await conn.commit();
+      // Commit the transaction
+      await conn.commit();
 
-    // Release the database connection
-    await conn.close();
+      // Release the database connection
+      await conn.close();
 
-    // Return a success response
-    res.status(200).json({ success: true });
-    console.log("committed");
+      // Return a success response
+      res.status(200).json({ success: true });
+      console.log("committed");
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error json' });
