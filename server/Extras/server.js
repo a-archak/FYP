@@ -12,6 +12,21 @@ app.use(cors());
 // Configure bodyParser middleware to parse request body as JSON
 app.use(bodyParser.json());
 
+//creating database connection
+const dbConfig = {
+  user: 'finaldb',
+  password: '123',
+  connectString: 'localhost:1521/xe',
+};
+
+//creating session
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  store: new oracledb(dbConfig),
+}));
+
 // Define a POST route to handle registration form submission
 app.post('/registerUser', async (req, res) => {
   try {
@@ -45,7 +60,7 @@ app.post('/registerUser', async (req, res) => {
     }
 
     //creating unique userID
-    
+
 
     //displaying user input
     console.log(`Userrole is ${role} is registering in table ${table}`);
